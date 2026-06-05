@@ -241,7 +241,7 @@ class ChatGroupedItem: ChatRowItem {
                     break
                 }
             }
-            self.parameters[i].isProtected = message.containsSecretMedia || message.isCopyProtected()
+            self.parameters[i].isProtected = message.containsSecretMedia
         }
         
         if isBubbleFullFilled, layout.messages.count == 1  {

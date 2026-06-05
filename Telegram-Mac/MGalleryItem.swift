@@ -153,7 +153,7 @@ enum GalleryEntry : Comparable, Identifiable {
     }
     
     var canShare: Bool {
-        return message != nil && !message!.isScheduledMessage && !message!.containsSecretMedia && !message!.isCopyProtected()
+        return message != nil && !message!.isScheduledMessage && !message!.containsSecretMedia
     }
 
     
@@ -323,7 +323,7 @@ enum GalleryEntry : Comparable, Identifiable {
     }
     
     var isProtected: Bool {
-        return self.message?.containsSecretMedia == true || self.message?.isCopyProtected() == true || paidMedia
+        return self.message?.containsSecretMedia == true || paidMedia
     }
     
     var paidMedia: Bool {

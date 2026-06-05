@@ -3808,13 +3808,7 @@ func showProtectedCopyAlert(_ peer: Peer, for window: Window) {
 
 extension Peer {
     var isCopyProtected: Bool {
-        if let peer = self as? TelegramGroup {
-            return peer.flags.contains(.copyProtectionEnabled) && !peer.groupAccess.isCreator
-        } else if let peer = self as? TelegramChannel {
-            return peer.flags.contains(.copyProtectionEnabled) && !(peer.adminRights != nil || peer.groupAccess.isCreator)
-        } else {
-            return false
-        }
+        return false
     }
     var emojiStatus: PeerEmojiStatus? {
         if let peer = self as? TelegramUser {

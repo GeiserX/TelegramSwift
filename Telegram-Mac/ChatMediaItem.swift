@@ -231,7 +231,7 @@ class ChatMediaItem: ChatRowItem {
         parameters?.chatLocationInput = chatInteraction.chatLocationInput
         parameters?.chatMode = chatInteraction.mode
         if let message {
-            parameters?.isProtected = message.containsSecretMedia || message.isCopyProtected() 
+            parameters?.isProtected = message.containsSecretMedia
         }
         
         parameters?.getUpdatingMediaProgress = { [weak self] messageId in
