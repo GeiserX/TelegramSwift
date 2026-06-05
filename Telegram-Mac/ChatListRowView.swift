@@ -699,7 +699,7 @@ private final class ChatListMediaPreviewView: View {
         let frame = CGRect(origin: CGPoint(), size: size)
         let media = self.media
         
-        let isProtected = self.message.containsSecretMedia || self.message.isCopyProtected() || self.message.paidContent != nil
+        let isProtected = self.message.containsSecretMedia || self.message.paidContent != nil
         
         self.imageView.preventsCapture = isProtected
         

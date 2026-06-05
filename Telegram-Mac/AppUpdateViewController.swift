@@ -563,8 +563,18 @@ enum UpdaterSource : Equatable {
 }
 
 
+// Automatic update checks are disabled by default in this fork. Opt back in by
+// setting the "automaticUpdateChecksEnabled" user-default key to true.
+var automaticUpdateChecksEnabled: Bool {
+    return UserDefaults.standard.bool(forKey: "automaticUpdateChecksEnabled")
+}
+
 private func resetUpdater() {
-    
+
+    if !automaticUpdateChecksEnabled {
+        return
+    }
+
     #if !GITHUB
         let update:()->Void = {
             let url = Bundle.main.infoDictionary!["SUFeedURL"] as! String
