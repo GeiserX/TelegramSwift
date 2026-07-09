@@ -559,6 +559,22 @@ class PeerInfoHeadItem: GeneralRowItem {
         }
     }
     
+    var hasBackgroundGradient: Bool {
+        if let emojiStatus = peer?.emojiStatus {
+            switch emojiStatus.content {
+            case .starGift:
+                return true
+            default:
+                break
+            }
+        }
+        if let nameColor = nameColor, threadId == nil, !editing {
+            return true
+        } else {
+            return false
+        }
+    }
+    
     var actionColor: NSColor {
         if let nameColor = nameColor, threadId == nil, !editing {
             let textColor = context.peerNameColors.getProfile(nameColor).main.lightness > 0.8 ? NSColor(0x000000) : NSColor(0xffffff)
@@ -820,6 +836,12 @@ class PeerInfoHeadItem: GeneralRowItem {
     func showStatusUnlocker() {
         if let peer = peer {
             showModal(with: PremiumShowStatusController(context: context, peer: .init(peer), source: .status), for: context.window)
+        }
+    }
+    
+    func previewRatig() {
+        if let rating, let peer {
+            showModal(with: PeerRatingModalController(context: context, peer: peer, rating: rating, pendingRating: (peerView.cachedData as? CachedUserData)?.pendingStarRating), for: context.window)
         }
     }
     
@@ -1655,13 +1677,7 @@ private final class PeerInfoHeadView : GeneralRowView {
     private var photoVideoPlayer: MediaPlayer?
     
     private var ratingView: PeerRatingView?
-    private var ratingState: PeerRatingView.State = .short {
-        didSet {
-            if let item {
-                self.set(item: item, animated: true)
-            }
-        }
-    }
+   
     
 
     private let backgroundView = PeerInfoBackgroundView(frame: .zero)
@@ -1917,16 +1933,7 @@ private final class PeerInfoHeadView : GeneralRowView {
         
         
         let statusContainerSize: NSSize
-        if let ratingView {
-            switch ratingState {
-            case .short:
-                statusContainerSize = NSMakeSize(statusContainer.subviewsWidthSize.width + 4, statusContainer.subviewsWidthSize.height)
-            case .full:
-                statusContainerSize = NSMakeSize(ratingView.frame.width, statusContainer.subviewsWidthSize.height)
-            }
-        } else {
-            statusContainerSize = NSMakeSize(statusContainer.subviewsWidthSize.width + 4, statusContainer.subviewsWidthSize.height)
-        }
+        statusContainerSize = NSMakeSize(statusContainer.subviewsWidthSize.width + 4, statusContainer.subviewsWidthSize.height)
         
 
         transition.updateFrame(view: backgroundView, frame: NSRect(x: 0, y: -110, width: size.width, height: size.height + 110))
@@ -2136,7 +2143,7 @@ private final class PeerInfoHeadView : GeneralRowView {
         }
         
 
-        if let emoji = item.peer?.profileBackgroundEmojiId, !item.editing {
+        if let emoji = item.peer?.profileBackgroundEmojiId, !item.editing, item.hasBackgroundGradient {
             let current: PeerInfoSpawnEmojiView
             if let view = self.emojiSpawn {
                 current = view
@@ -2163,15 +2170,13 @@ private final class PeerInfoHeadView : GeneralRowView {
                 self.ratingView = current
                 statusContainer.addSubview(current)
             }
-            let size = current.set(data: rating, context: item.context, textColor: item.colorfulProfile ? item.backgroundGradient[0] : NSColor.black, state: self.ratingState, animated: animated)
+            current.set(data: rating, context: item.context, borderColor: NSColor(0xffffff), bgColor: NSColor(0xffffff), textColor: item.colorfulProfile ? item.backgroundGradient[0] : NSColor(0x000000), animated: animated)
             
-            current.change(size: size, animated: animated)
-            current.updateLayout(size: size, transition: animated ? .animated(duration: 0.2, curve: .easeOut) : .immediate)
+            current.change(size: current.smallSize, animated: animated)
+            current.updateLayout(size: current.smallSize, transition: animated ? .animated(duration: 0.2, curve: .easeOut) : .immediate)
             
-            current.setSingle(handler: { [weak self] _ in
-                if let self {
-                    self.ratingState = self.ratingState.toggle()
-                }
+            current.setSingle(handler: { [weak item] _ in
+                item?.previewRatig()
             }, for: .Click)
             
         } else if let view = self.ratingView {
@@ -2294,9 +2299,6 @@ private final class PeerInfoHeadView : GeneralRowView {
         }
         
         
-        statusView.change(opacity: ratingState == .full ? 0 : 1, animated: animated)
-        showStatusView?.change(opacity: ratingState == .full ? 0 : 1, animated: animated)
-
         
         self.updateLayout(size: self.frame.size, transition: transition)
         

@@ -590,24 +590,24 @@ private func entries(_ state: State, arguments: Arguments) -> [InputDataEntry] {
         }
         let chunks = filtered(state.starGifts, state.selectedStarFilter).chunks(3)
         
+        
+        entries.append(.sectionId(sectionId, type: .normal))
+        sectionId += 1
+        
+        entries.append(.custom(sectionId: sectionId, index: index, value: .none, identifier: _id_star_header, equatable: .init(state), comparable: nil, item: { initialSize, stableId in
+            return HeaderTextRowItem(initialSize, stableId: stableId, peer: peer, type: .stars(selfGift: arguments.context.peerId == peer.id), context: arguments.context, openPromo: arguments.openPromo)
+        }))
+        
+        entries.append(.sectionId(sectionId, type: .customModern(10)))
+        sectionId += 1
+        
+        entries.append(.custom(sectionId: sectionId, index: index, value: .none, identifier: _id_star_filters, equatable: .init(state), comparable: nil, item: { initialSize, stableId in
+            return StarGiftFilterRowItem(initialSize, stableId: stableId, context: arguments.context, filters: state.starFilters, selected: state.selectedStarFilter, arguments: arguments)
+        }))
+        
+        
         if !chunks.isEmpty {
             
-            
-            entries.append(.sectionId(sectionId, type: .normal))
-            sectionId += 1
-            
-            entries.append(.custom(sectionId: sectionId, index: index, value: .none, identifier: _id_star_header, equatable: .init(state), comparable: nil, item: { initialSize, stableId in
-                return HeaderTextRowItem(initialSize, stableId: stableId, peer: peer, type: .stars(selfGift: arguments.context.peerId == peer.id), context: arguments.context, openPromo: arguments.openPromo)
-            }))
-            
-            entries.append(.sectionId(sectionId, type: .customModern(10)))
-            sectionId += 1
-            
-            entries.append(.custom(sectionId: sectionId, index: index, value: .none, identifier: _id_star_filters, equatable: .init(state), comparable: nil, item: { initialSize, stableId in
-                return StarGiftFilterRowItem(initialSize, stableId: stableId, context: arguments.context, filters: state.starFilters, selected: state.selectedStarFilter, arguments: arguments)
-            }))
-            
-           
             entries.append(.sectionId(sectionId, type: .customModern(10)))
             sectionId += 1
             
@@ -634,7 +634,7 @@ private func entries(_ state: State, arguments: Arguments) -> [InputDataEntry] {
             for (i, chunk) in chunks.enumerated() {
                 if !chunk.isEmpty {
                     entries.append(.custom(sectionId: sectionId, index: index, value: .none, identifier: _id_stars_gifts(i), equatable: .init(chunk), comparable: nil, item: { initialSize, stableId in
-                        return GiftOptionsRowItem(initialSize, stableId: stableId, context: arguments.context, options: chunk.map { .initialize($0, transfrarable: true) }, insets: .init(left: 10, right: 10), callback: { option in
+                        return GiftOptionsRowItem(initialSize, stableId: stableId, context: arguments.context, options: chunk.map { .initialize($0, context: arguments.context, transfrarable: true) }, insets: .init(left: 10, right: 10), callback: { option in
                             if let gift = option.nativeProfileGift {
                                 arguments.transfer(gift)
                             }
@@ -696,10 +696,8 @@ func GiftingController(context: AccountContext, peerId: PeerId, isBirthday: Bool
     
     let birtday = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Birthday(id: peerId))
     
-    let giftsContext = ProfileGiftsContext(account: context.account, peerId: context.peerId)
-    
-    giftsContext.updateFilter(.unique)
-    
+    let giftsContext = ProfileGiftsContext(account: context.account, peerId: context.peerId, filter: [.unique, .displayed, .hidden])
+        
     let disallowedGifts: Signal<TelegramDisallowedGifts?, NoError> = context.account.viewTracker.peerView(peerId, updateData: true) |> map { view in
         if peerId == context.peerId {
             return nil
@@ -744,10 +742,14 @@ func GiftingController(context: AccountContext, peerId: PeerId, isBirthday: Bool
                 if let disallowedGifts {
                     current.starGifts = current.starGifts.filter({ gift in
                         if gift.limited && disallowedGifts.contains(.limited) {
-                            return false
+                            if gift.native.generic?.availability?.minResaleStars == nil {
+                                return false
+                            }
                         }
                         if !gift.limited && disallowedGifts.contains(.unlimited) {
-                            return false
+                            if gift.native.generic?.availability?.minResaleStars == nil {
+                                return false
+                            }
                         }
                         if gift.native.unique != nil && disallowedGifts.contains(.unique) {
                             return false
@@ -811,7 +813,7 @@ func GiftingController(context: AccountContext, peerId: PeerId, isBirthday: Bool
                 if limit.remains == 0 {
                     showModalText(
                         for: window,
-                        text: strings().giftSendErrorLimitReached(Int(limit.total))
+                        text: strings().giftSendErrorLimitReachedCountable(Int(limit.total))
                     )
                 }
             }

@@ -96,11 +96,11 @@ final class StoryMonthRowItem : GeneralRowItem {
     fileprivate let selected: Set<StoryId>?
     fileprivate let openStory:(StoryInitialIndex?)->Void
     fileprivate let toggleSelected: (StoryId)->Void
-    fileprivate let menuItems: (EngineStoryItem)->[ContextMenuItem]
+    fileprivate let menuItems: (StoryListContextState.Item)->[ContextMenuItem]
     fileprivate let pinnedIds:[Int32]
     fileprivate let presentation: TelegramPresentationTheme
     fileprivate let rowCountValue: Int
-    init(_ initialSize: NSSize, stableId: AnyHashable, context: AccountContext, standalone: Bool, peerId: PeerId, peerReference: PeerReference, items: [StoryListContextState.Item], selected: Set<StoryId>?, pinnedIds:[Int32], rowCount: Int, viewType: GeneralViewType, openStory:@escaping(StoryInitialIndex?)->Void, toggleSelected: @escaping(StoryId)->Void, menuItems:@escaping(EngineStoryItem)->[ContextMenuItem], presentation: TelegramPresentationTheme = theme) {
+    init(_ initialSize: NSSize, stableId: AnyHashable, context: AccountContext, standalone: Bool, peerId: PeerId, peerReference: PeerReference, items: [StoryListContextState.Item], selected: Set<StoryId>?, pinnedIds:[Int32], rowCount: Int, viewType: GeneralViewType, openStory:@escaping(StoryInitialIndex?)->Void, toggleSelected: @escaping(StoryId)->Void, menuItems:@escaping(StoryListContextState.Item)->[ContextMenuItem], presentation: TelegramPresentationTheme = theme) {
         self.items = items
         self.selected = selected
         self.standalone = standalone
@@ -113,13 +113,13 @@ final class StoryMonthRowItem : GeneralRowItem {
         self.pinnedIds = pinnedIds
         self.rowCountValue = rowCount
         self.presentation = presentation
-        super.init(initialSize, stableId: stableId, viewType: viewType, inset: standalone ? NSEdgeInsets(left: 20, right: 20) : NSEdgeInsets())
+        super.init(initialSize, stableId: stableId, viewType: viewType, inset: standalone ? NSEdgeInsets(left: 20, right: 20) : NSEdgeInsets(), fullSize: !standalone)
     }
     
     override func menuItems(in location: NSPoint) -> Signal<[ContextMenuItem], NoError> {
         for item in layoutItems {
             if NSPointInRect(location, item.frame) {
-                return .single(self.menuItems(item.item.storyItem))
+                return .single(self.menuItems(item.item))
             }
         }
         return super.menuItems(in: location)
