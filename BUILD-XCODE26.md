@@ -73,6 +73,14 @@ Identical on Xcode 16, so no regression. (4 occurrences.)
    app ships), and is snappier for daily use. `SWIFT_COMPILATION_MODE=singlefile` keeps `-O`
    parallel (per-file optimization, no WMO bottleneck). A tell: `-Onone` emits a separate
    `Telegram.debug.dylib`; `-O` yields a single `Telegram` binary.
+
+   **Optimize C too — do NOT pass `GCC_OPTIMIZATION_LEVEL=0`.** `SWIFT_OPTIMIZATION_LEVEL` only
+   controls Swift; the bundled SQLite is C. If C is built unoptimized, SQLite is pathologically
+   slow, and Postbox's `SqliteValueBox.isEncrypted` has a 15-second watchdog that calls
+   `preconditionFailure()` (a hard crash) if `sqlite3_prepare_v2` doesn't finish in time — under
+   concurrent DB load on a busy chat this trips and the app dies in the DB-open path. Leave
+   `GCC_OPTIMIZATION_LEVEL` unset (Release default `-Os`) or set it to `s`. The command below
+   omits it deliberately.
    ```
    xcodebuild -workspace Telegram-Mac.xcworkspace -scheme Telegram -configuration Release \
      -derivedDataPath <dd> \
