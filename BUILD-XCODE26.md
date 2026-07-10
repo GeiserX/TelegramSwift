@@ -49,15 +49,24 @@ Identical on Xcode 16, so no regression. (4 occurrences.)
    `GoogleAppMeasurement`, `GoogleAppMeasurementIdentitySupport` to non-shallow
    (`Versions/A` + `Current` + top-level symlinks) and re-sign ad-hoc, then re-embed.
 
-6. **App build** — fast local/personal invocation (parallel, no coverage/LTO, ad-hoc, non-sandboxed
-   friendly). Coverage (`-profile-generate`) + LTO + WMO make the main-app compile
-   pathologically slow; `-Onone` + single-file parallelises across all cores:
+6. **App build** — parallel, no coverage/LTO, ad-hoc, non-sandboxed friendly. Coverage
+   (`-profile-generate`) + LTO + WMO make the main-app compile pathologically slow; single-file
+   parallelises across all cores.
+
+   **Build `-O`, NOT `-Onone`.** `-Onone` compiles fast but ships Swift's debug preconditions.
+   This codebase reads FlatBuffers at unaligned byte offsets (fine on arm64 hardware), and the
+   `UnsafeRawPointer.load` alignment `_debugPrecondition` then *traps* (`EXC_BREAKPOINT`) —
+   e.g. opening any chat row with Instant View / rich web-page content crashes on
+   `RichText.init(flatBuffersObject:)`. `-O` compiles that precondition out (as the official
+   app ships), and is snappier for daily use. `SWIFT_COMPILATION_MODE=singlefile` keeps `-O`
+   parallel (per-file optimization, no WMO bottleneck). A tell: `-Onone` emits a separate
+   `Telegram.debug.dylib`; `-O` yields a single `Telegram` binary.
    ```
    xcodebuild -workspace Telegram-Mac.xcworkspace -scheme Telegram -configuration Release \
      -derivedDataPath <dd> \
      CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
      MACOSX_DEPLOYMENT_TARGET=11.0 ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO \
-     SWIFT_OPTIMIZATION_LEVEL=-Onone GCC_OPTIMIZATION_LEVEL=0 SWIFT_COMPILATION_MODE=singlefile \
+     SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=singlefile \
      CLANG_ENABLE_CODE_COVERAGE=NO LLVM_LTO=NO ENABLE_TESTABILITY=NO build
    ```
 
