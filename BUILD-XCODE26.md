@@ -44,6 +44,18 @@ Identical on Xcode 16, so no regression. (4 occurrences.)
    `submodules/tg_owt/src/third_party/abseil-cpp/absl/base/attributes.h` (it's a static-analysis
    hint only). tg_owt is a submodule, so this is applied at build time, not committed here.
 
+4b. **FlatBuffers unaligned-read crash (REQUIRED for a usable app).** Runtime crash, not a build
+   error: opening any chat row with Instant View / rich web-page content trapped with
+   `EXC_BREAKPOINT` in `ByteBuffer.read → UnsafeRawPointer.load → _assertionFailure`. FlatBuffers
+   reads packed data at unaligned offsets; Swift's `.load(as:)` *requires* alignment and traps
+   (at ANY optimization level — this is not a debug-only check). In
+   `submodules/telegram-ios/submodules/TelegramCore/FlatBuffers/Sources/ByteBuffer.swift`, `read`
+   picks `.load` unless `allowReadingUnalignedBuffers` is true (it defaults false). Fix: make the
+   fallback use `loadUnaligned` too — change the `return …advanced(by: position).load(as: T.self)`
+   line to `.loadUnaligned(as: T.self)` (same call already used on the true branch; safe on all
+   archs). Body-only change → incremental rebuild (recompile FlatBuffers + relink, ~2 min).
+   telegram-ios is a submodule (overtake/Telegram-iOS) → build-time patch, not committed here.
+
 5. **Firebase macOS xcframework slices are shallow** (iOS-style), which Xcode 26 rejects at
    embed validation. Convert the macos-arm64_x86_64 slices of `FirebaseAnalytics`,
    `GoogleAppMeasurement`, `GoogleAppMeasurementIdentitySupport` to non-shallow
